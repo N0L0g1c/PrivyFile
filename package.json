@@ -1,0 +1,48 @@
+{
+  "name": "privyfile",
+  "version": "0.1.0",
+  "description": "Sanitize files before you share or delete them",
+  "author": "N0L0g1c",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/N0L0g1c/PrivyFile.git"
+  },
+  "homepage": "https://github.com/N0L0g1c/PrivyFile#readme",
+  "bugs": {
+    "url": "https://github.com/N0L0g1c/PrivyFile/issues"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "fetch-exiftool": "node ./scripts/fetch-exiftool.js",
+    "verify-exiftool": "node ./scripts/verify-exiftool-bundle.js",
+    "verify-exiftool:installer": "node ./scripts/verify-exiftool-installer.js",
+    "test:exiftool-runtime": "node ./scripts/test-exiftool-runtime.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.6.0",
+    "@tauri-apps/plugin-dialog": "^2.2.2",
+    "@tauri-apps/plugin-fs": "^2.3.0",
+    "@tauri-apps/plugin-opener": "^2.2.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.6.0",
+    "@tailwindcss/vite": "^4.1.8",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.1",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}

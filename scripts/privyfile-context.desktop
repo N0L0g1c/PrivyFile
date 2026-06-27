@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=PrivyFile Clean Metadata
+Exec=privyfile clean %F
+Icon=privyfile
+Terminal=false
+ServiceTypes=KonqPopupMenu/Plugin,allfiles;;
+MimeType=all/all;

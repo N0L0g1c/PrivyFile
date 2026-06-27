@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - run: npm ci
+      - run: npm run fetch-exiftool
+      - run: npm run verify-exiftool
+      - run: npm run test:exiftool-runtime
+      - run: npm run build
+      - run: npm test
+      - run: cargo test --workspace
+
+  test-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y perl curl
+
+      - run: npm ci
+      - run: npm run fetch-exiftool
+      - run: npm run verify-exiftool
+      - run: npm run test:exiftool-runtime
+      - run: cargo test -p privyfile-core

@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+dist/
+
+# Rust
+target/
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env
+.env
+.env.*
+
+# Downloaded ExifTool bundles (fetched by scripts/fetch-exiftool.*)
+src-tauri/binaries/win/exiftool.exe
+src-tauri/binaries/win/exiftool_files/
+src-tauri/binaries/win/.exiftool-version
+src-tauri/binaries/linux/exiftool
+src-tauri/binaries/linux/lib/
+src-tauri/binaries/linux/.exiftool-version
+src-tauri/binaries/macos/exiftool
+src-tauri/binaries/macos/lib/
+src-tauri/binaries/macos/.exiftool-version

@@ -1,0 +1,126 @@
+name: Release PrivyFile
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: "--target x86_64-pc-windows-msvc"
+          - platform: ubuntu-22.04
+            args: ""
+          - platform: macos-latest
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: matrix.platform == 'windows-latest'
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: matrix.platform != 'windows-latest'
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            perl \
+            curl
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Fetch bundled ExifTool
+        run: npm run fetch-exiftool
+
+      - name: Verify bundled ExifTool
+        run: npm run verify-exiftool
+
+      - name: Build Tauri app
+        run: npm run tauri build -- ${{ matrix.args }}
+        env:
+          CI: true
+
+      - name: Verify ExifTool in Windows installer
+        if: runner.os == 'Windows'
+        run: npm run verify-exiftool:installer
+
+      - name: Locate bundle directory
+        id: bundle
+        shell: bash
+        run: |
+          BUNDLE_DIR="$(find src-tauri/target -path '*/release/bundle' -type d | head -n 1)"
+          if [[ -z "$BUNDLE_DIR" ]]; then
+            echo "No Tauri bundle directory found under src-tauri/target" >&2
+            exit 1
+          fi
+          echo "dir=$BUNDLE_DIR" >> "$GITHUB_OUTPUT"
+          ls -la "$BUNDLE_DIR"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundles-${{ matrix.platform }}
+          path: ${{ steps.bundle.outputs.dir }}/
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f \( \
+            -name '*.msi' -o \
+            -name '*.exe' -o \
+            -name '*.deb' -o \
+            -name '*.AppImage' -o \
+            -name '*.rpm' -o \
+            -name '*.dmg' -o \
+            -name '*.app.tar.gz' \
+          \) -exec cp -v {} release-assets/ \;
+          if [[ -z "$(ls -A release-assets)" ]]; then
+            echo "No release assets found" >&2
+            exit 1
+          fi
+          ls -la release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: PrivyFile ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release-assets/*
