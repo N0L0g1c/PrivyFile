@@ -79,6 +79,15 @@ git push origin v0.1.0
 
 The `Release PrivyFile` workflow produces Windows (MSI + NSIS), Linux (`.deb` / AppImage), and macOS (`.dmg`) assets.
 
+If a release completes without installer files attached, open **Actions → Release PrivyFile**, inspect the failed platform job, fix the issue, then re-run the workflow or push an updated tag:
+
+```bash
+git tag -d v0.1.0
+git push origin :refs/tags/v0.1.0
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## Context menu integration
 
 - **Windows:** run `scripts/install-context-menu.ps1`

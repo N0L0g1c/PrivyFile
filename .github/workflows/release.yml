@@ -17,10 +17,13 @@ jobs:
         include:
           - platform: windows-latest
             args: "--target x86_64-pc-windows-msvc"
+            label: windows
           - platform: ubuntu-22.04
             args: ""
+            label: linux
           - platform: macos-latest
             args: ""
+            label: macos
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -76,17 +79,51 @@ jobs:
           BUNDLE_DIR="$(find src-tauri/target -path '*/release/bundle' -type d | head -n 1)"
           if [[ -z "$BUNDLE_DIR" ]]; then
             echo "No Tauri bundle directory found under src-tauri/target" >&2
+            find src-tauri/target -maxdepth 5 -type d 2>/dev/null || true
             exit 1
           fi
           echo "dir=$BUNDLE_DIR" >> "$GITHUB_OUTPUT"
-          ls -la "$BUNDLE_DIR"
+          echo "Bundle directory: $BUNDLE_DIR"
+          find "$BUNDLE_DIR" -type f | sort
 
-      - name: Upload artifacts
+      - name: Stage installer files
+        id: staging
+        shell: bash
+        run: |
+          BUNDLE_DIR="${{ steps.bundle.outputs.dir }}"
+          STAGING="${RUNNER_TEMP}/privyfile-installers"
+          mkdir -p "$STAGING"
+
+          mapfile -t FILES < <(find "$BUNDLE_DIR" -type f \( \
+            -iname '*.msi' -o \
+            -iname '*setup.exe' -o \
+            -iname '*.deb' -o \
+            -iname '*.appimage' -o \
+            -iname '*.rpm' -o \
+            -iname '*.dmg' -o \
+            -iname '*.app.tar.gz' \
+          \) | sort)
+
+          if [[ ${#FILES[@]} -eq 0 ]]; then
+            echo "No installer files found in $BUNDLE_DIR" >&2
+            exit 1
+          fi
+
+          for file in "${FILES[@]}"; do
+            base="$(basename "$file")"
+            cp -v "$file" "$STAGING/${{ matrix.label }}-${base}"
+          done
+
+          ls -la "$STAGING"
+          echo "dir=$STAGING" >> "$GITHUB_OUTPUT"
+
+      - name: Upload installer artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: bundles-${{ matrix.platform }}
-          path: ${{ steps.bundle.outputs.dir }}/
+          name: installers-${{ matrix.label }}
+          path: ${{ steps.staging.outputs.dir }}/*
           if-no-files-found: error
+          retention-days: 14
 
   release:
     needs: build
@@ -95,25 +132,18 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          pattern: installers-*
+          merge-multiple: true
+          path: release-assets
 
-      - name: Collect release assets
+      - name: List release assets
         run: |
-          mkdir -p release-assets
-          find artifacts -type f \( \
-            -name '*.msi' -o \
-            -name '*.exe' -o \
-            -name '*.deb' -o \
-            -name '*.AppImage' -o \
-            -name '*.rpm' -o \
-            -name '*.dmg' -o \
-            -name '*.app.tar.gz' \
-          \) -exec cp -v {} release-assets/ \;
-          if [[ -z "$(ls -A release-assets)" ]]; then
-            echo "No release assets found" >&2
+          echo "Release assets to upload:"
+          find release-assets -type f | sort
+          if [[ -z "$(find release-assets -type f | head -n 1)" ]]; then
+            echo "No release assets downloaded from build jobs" >&2
             exit 1
           fi
-          ls -la release-assets/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -122,5 +152,7 @@ jobs:
           name: PrivyFile ${{ github.ref_name }}
           draft: false
           prerelease: false
+          make_latest: true
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: release-assets/*
