@@ -18,7 +18,7 @@ jobs:
           - platform: windows-latest
             args: ""
             label: windows
-          - platform: ubuntu-22.04
+          - platform: ubuntu-24.04
             args: ""
             label: linux
           - platform: macos-latest
@@ -37,7 +37,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-24.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -49,7 +49,6 @@ jobs:
             libxdo-dev \
             libssl-dev \
             libayatana-appindicator3-dev \
-            libappindicator3-dev \
             librsvg2-dev \
             patchelf \
             perl
@@ -118,7 +117,18 @@ jobs:
           \) | sort)
 
           if [[ ${#FILES[@]} -eq 0 ]]; then
+            mapfile -t APP_BUNDLES < <(find "$BUNDLE_DIR" -type d -name '*.app' | sort)
+            for app in "${APP_BUNDLES[@]}"; do
+              base="$(basename "$app")"
+              archive="${RUNNER_TEMP}/${base}.tar.gz"
+              tar -czf "$archive" -C "$(dirname "$app")" "$base"
+              FILES+=("$archive")
+            done
+          fi
+
+          if [[ ${#FILES[@]} -eq 0 ]]; then
             echo "No installer files found in $BUNDLE_DIR" >&2
+            find "$BUNDLE_DIR" | sort
             exit 1
           fi
 
