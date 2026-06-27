@@ -106,7 +106,10 @@ jobs:
           STAGING="${RUNNER_TEMP}/privyfile-installers"
           mkdir -p "$STAGING"
 
-          mapfile -t FILES < <(find "$BUNDLE_DIR" -type f \( \
+          FILES=()
+          while IFS= read -r file; do
+            FILES+=("$file")
+          done < <(find "$BUNDLE_DIR" -type f \( \
             -iname '*.msi' -o \
             -iname '*setup.exe' -o \
             -iname '*.deb' -o \
@@ -117,13 +120,12 @@ jobs:
           \) | sort)
 
           if [[ ${#FILES[@]} -eq 0 ]]; then
-            mapfile -t APP_BUNDLES < <(find "$BUNDLE_DIR" -type d -name '*.app' | sort)
-            for app in "${APP_BUNDLES[@]}"; do
+            while IFS= read -r app; do
               base="$(basename "$app")"
               archive="${RUNNER_TEMP}/${base}.tar.gz"
               tar -czf "$archive" -C "$(dirname "$app")" "$base"
               FILES+=("$archive")
-            done
+            done < <(find "$BUNDLE_DIR" -type d -name '*.app' | sort)
           fi
 
           if [[ ${#FILES[@]} -eq 0 ]]; then
