@@ -16,7 +16,7 @@ jobs:
       matrix:
         include:
           - platform: windows-latest
-            args: "--target x86_64-pc-windows-msvc"
+            args: ""
             label: windows
           - platform: ubuntu-22.04
             args: ""
@@ -35,12 +35,6 @@ jobs:
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
-        if: matrix.platform == 'windows-latest'
-        with:
-          targets: x86_64-pc-windows-msvc
-
-      - uses: dtolnay/rust-toolchain@stable
-        if: matrix.platform != 'windows-latest'
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -48,11 +42,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
             libappindicator3-dev \
             librsvg2-dev \
             patchelf \
-            perl \
-            curl
+            perl
 
       - name: Install frontend dependencies
         run: npm ci
@@ -64,6 +64,7 @@ jobs:
         run: npm run verify-exiftool
 
       - name: Build Tauri app
+        shell: bash
         run: npm run tauri build -- ${{ matrix.args }}
         env:
           CI: true
@@ -76,10 +77,22 @@ jobs:
         id: bundle
         shell: bash
         run: |
-          BUNDLE_DIR="$(find target src-tauri/target -path '*/release/bundle' -type d 2>/dev/null | head -n 1)"
+          BUNDLE_DIR=""
+          for candidate in \
+            target/release/bundle \
+            target/*/release/bundle \
+            src-tauri/target/release/bundle \
+            src-tauri/target/*/release/bundle
+          do
+            if [[ -d "$candidate" ]]; then
+              BUNDLE_DIR="$candidate"
+              break
+            fi
+          done
+
           if [[ -z "$BUNDLE_DIR" ]]; then
             echo "No Tauri bundle directory found under target/ or src-tauri/target/" >&2
-            find target src-tauri/target -maxdepth 5 -type d 2>/dev/null || true
+            find target src-tauri/target -maxdepth 6 -type d 2>/dev/null | sort || true
             exit 1
           fi
           echo "dir=$BUNDLE_DIR" >> "$GITHUB_OUTPUT"

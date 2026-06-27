@@ -2,7 +2,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
+use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, RecommendedCache};
 use notify::{RecommendedWatcher, RecursiveMode};
 
 use crate::metadata::clean_file;
@@ -10,7 +10,7 @@ use crate::profiles::apply_profile;
 use crate::types::{CleanOptions, PrivyFileError, Result};
 
 pub struct WatchHandle {
-    _debouncer: Debouncer<RecommendedWatcher, FileIdMap>,
+    _debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
 }
 
 pub fn start_watch_folder(
