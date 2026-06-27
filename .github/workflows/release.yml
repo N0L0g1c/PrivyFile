@@ -76,10 +76,10 @@ jobs:
         id: bundle
         shell: bash
         run: |
-          BUNDLE_DIR="$(find src-tauri/target -path '*/release/bundle' -type d | head -n 1)"
+          BUNDLE_DIR="$(find target src-tauri/target -path '*/release/bundle' -type d 2>/dev/null | head -n 1)"
           if [[ -z "$BUNDLE_DIR" ]]; then
-            echo "No Tauri bundle directory found under src-tauri/target" >&2
-            find src-tauri/target -maxdepth 5 -type d 2>/dev/null || true
+            echo "No Tauri bundle directory found under target/ or src-tauri/target/" >&2
+            find target src-tauri/target -maxdepth 5 -type d 2>/dev/null || true
             exit 1
           fi
           echo "dir=$BUNDLE_DIR" >> "$GITHUB_OUTPUT"

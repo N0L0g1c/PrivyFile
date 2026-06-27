@@ -10,8 +10,12 @@ if (process.platform !== "win32") {
   process.exit(0);
 }
 
-const wxs = join(root, "src-tauri", "target", "release", "wix", "x64", "main.wxs");
-if (!existsSync(wxs)) {
+const wxsCandidates = [
+  join(root, "target", "release", "wix", "x64", "main.wxs"),
+  join(root, "src-tauri", "target", "release", "wix", "x64", "main.wxs"),
+];
+const wxs = wxsCandidates.find((path) => existsSync(path));
+if (!wxs) {
   console.log("WiX file not found; skipping installer verification");
   process.exit(0);
 }
