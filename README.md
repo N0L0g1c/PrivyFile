@@ -35,7 +35,7 @@ PrivyFile is a privacy-first, local-only desktop tool from [VassDev Studio](http
 ### Setup
 
 ```powershell
-cd "C:\Users\sinva\Documents\Code Projects\PrivyFile"
+cd "C:\Users\Username\Documents\Code Projects\PrivyFile"
 npm install
 npm run tauri dev
 ```
